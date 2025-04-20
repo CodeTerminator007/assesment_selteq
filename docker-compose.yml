@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: selteq_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: selteq_db
+      MYSQL_USER: selteq
+      MYSQL_PASSWORD: selteq
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'no'
+      MYSQL_INITDB_ARGS: '--default-authentication-plugin=mysql_native_password'
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: django_app
+    command: >
+      bash -c "python manage.py migrate &&
+               python manage.py init_db &&
+               python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_DB_HOST=db
+      - DJANGO_DB_NAME=selteq_db
+      - DJANGO_DB_USER=selteq
+      - DJANGO_DB_PASSWORD=selteq
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+
+  celery_worker:
+    build: .
+    container_name: celery_worker
+    command: celery -A selteq_task worker -l info
+    volumes:
+      - .:/app
+    environment:
+      - DJANGO_DB_HOST=db
+      - DJANGO_DB_NAME=selteq_db
+      - DJANGO_DB_USER=selteq
+      - DJANGO_DB_PASSWORD=selteq
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - web
+
+  celery_beat:
+    build: .
+    container_name: celery_beat
+    command: celery -A selteq_task beat -l info
+    volumes:
+      - .:/app
+    environment:
+      - DJANGO_DB_HOST=db
+      - DJANGO_DB_NAME=selteq_db
+      - DJANGO_DB_USER=selteq
+      - DJANGO_DB_PASSWORD=selteq
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - web
+
+volumes:
+  db_data:
