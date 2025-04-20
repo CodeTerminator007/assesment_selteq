@@ -24,13 +24,17 @@ docker-compose up -d --build
 
 4. To run the tests:
 ```bash
-# Inside the Docker container
+# Outside the Docker container
 docker-compose exec web python manage.py test tasks.tests -v 2
+# Inside the Docker container
+python3 manage.py test tasks.tests -v 2
 ```
 5. To run the Log Tasks command:
 ```bash
-# Inside the Docker container
+# Outside the Docker container
 docker-compose exec web python manage.py log_tasks
+# Inside the Docker container
+python3 manage.py log_tasks
 ```
 
 
