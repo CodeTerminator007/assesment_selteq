@@ -8,7 +8,7 @@
 ```bash
 git clone https://github.com/CodeTerminator007/assesment_selteq.git
 
-cd selteq_task
+cd assesment_selteq
 ```
 
 2. Start the services:
