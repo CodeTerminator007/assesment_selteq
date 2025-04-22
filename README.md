@@ -53,7 +53,6 @@ python3 manage.py log_tasks
 3. **Raw SQL Implementation**
    - Custom endpoint for title-only updates
    - Raw SQL query for task retrieval
-   - SQL injection protection
 
 4. **Background Tasks**
    - Celery with Redis as message broker and result backend
@@ -67,7 +66,6 @@ python3 manage.py log_tasks
    - Automatic initialization
 
 6. **Testing**
-   - Comprehensive test suite
    - JWT authentication tests
    - Task management tests
    - Raw SQL operations tests
